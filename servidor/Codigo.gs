@@ -89,6 +89,8 @@ function doPost(e) {
         return json_({ ok: true, version: version_() });
       case 'importar':
         return json_({ ok: true, importadas: importar_(datos.recetas || []) });
+      case 'fotosSites':
+        return json_({ ok: true, resultado: fotosSites_(datos.categoria, datos.items || []), version: version_() });
       default:
         return json_({ ok: false, error: 'Acción desconocida' });
     }
@@ -176,6 +178,53 @@ function importar_(lista) {
     marcarVersion_();
   }
   return nuevas.length;
+}
+
+
+/* ============ Fotos de la antigua web de Google Sites ============ */
+
+const WEB_SITES = 'https://sites.google.com/g.educaand.es/recetaweb/';
+
+/**
+ * Copia a Drive las fotos de una página de categoría de la web antigua.
+ * items: [{ id, indice }] — indice = posición de la imagen en la página.
+ * Solo pone foto a las recetas que todavía no tienen.
+ */
+function fotosSites_(categoria, items) {
+  const html = UrlFetchApp.fetch(WEB_SITES + encodeURIComponent(categoria), { muteHttpExceptions: true }).getContentText();
+  const fuentes = [];
+  const re = /<img[^>]*\ssrc="([^"]+)"/g;
+  let m;
+  while ((m = re.exec(html))) fuentes.push(m[1].replace(/&amp;/g, '&').split('=')[0]);
+
+  const h = hoja_();
+  const res = [];
+  items.forEach(it => {
+    try {
+      const fila = buscarFila_(it.id);
+      if (!fila) { res.push({ id: it.id, ok: false, error: 'Receta no encontrada' }); return; }
+      const receta = filaAObjeto_(h.getRange(fila, 1, 1, CAMPOS.length).getValues()[0]);
+      if (receta.foto) { res.push({ id: it.id, ok: true, omitida: true }); return; }
+      const src = fuentes[it.indice];
+      if (!src) { res.push({ id: it.id, ok: false, error: 'Imagen no encontrada' }); return; }
+      const r = UrlFetchApp.fetch(src + '=w1600', { muteHttpExceptions: true });
+      if (r.getResponseCode() !== 200) { res.push({ id: it.id, ok: false, error: 'HTTP ' + r.getResponseCode() }); return; }
+      const blob = r.getBlob();
+      const tipo = blob.getContentType() || 'image/jpeg';
+      const ext = (tipo.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+      blob.setName(normalizar_(receta.titulo).replace(/\s+/g, '-') + '.' + ext);
+      const archivo = carpeta_().createFile(blob);
+      archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      receta.foto = 'https://lh3.googleusercontent.com/d/' + archivo.getId();
+      receta.actualizada = new Date().toISOString();
+      h.getRange(fila, 1, 1, CAMPOS.length).setValues([objetoAFila_(receta)]);
+      res.push({ id: it.id, ok: true, foto: receta.foto });
+    } catch (err) {
+      res.push({ id: it.id, ok: false, error: String(err) });
+    }
+  });
+  marcarVersion_();
+  return res;
 }
 
 

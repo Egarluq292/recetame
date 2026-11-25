@@ -192,7 +192,7 @@ b,strong{font-weight:700}
 
 <script>
 /* ============ CONFIGURACIÓN ============ */
-const VERSION_APP = '1.0';
+const VERSION_APP = '1.1';
 const API = 'https://script.google.com/macros/s/AKfycbxN4ZFdC8Ci31OKdtnWfAFjbkxe72K3fogh09CZBdf9HS-X0M6CBCTs2mFDecMBh7WO/exec';
 const CATEGORIAS = [
   ['Ensaladas y platos fríos', '🥗'], ['Airfryer - Horno', '🔥'], ['Carnes y salteados', '🍗'],
@@ -226,7 +226,9 @@ function idxCat(c){ const i = CATEGORIAS.findIndex(x => x[0] === c); return i < 
 function emojiCat(c){ const x = CATEGORIAS.find(x => x[0] === c); return x ? x[1] : '🍽️'; }
 function iconoDe(r){ return r.icono || emojiCat((r.categorias || [])[0]); }
 function claseDe(r){ return 'c' + idxCat((r.categorias || [])[0]); }
-function portadaEstilo(r){ return r.foto ? `style="background-image:url('${esc(r.foto)}')"` : ''; }
+/** Las fotos de Drive admiten tamaño en la URL: así las tarjetas cargan rápido. */
+function fotoTam(url, w){ return /googleusercontent\.com\/d\//.test(url) ? url.replace(/=w\d+$/, '') + '=w' + w : url; }
+function portadaEstilo(r, w){ return r.foto ? `style="background-image:url('${esc(fotoTam(r.foto, w || 600))}')"` : ''; }
 
 /* ============ DATOS ============ */
 async function apiGet(accion){
@@ -374,7 +376,7 @@ function vReceta(r){
       </div>
     </div>
     <div class="ficha">
-      <div class="ficha-portada ${claseDe(r)}" ${portadaEstilo(r)}>${r.foto ? '' : iconoDe(r)}</div>
+      <div class="ficha-portada ${claseDe(r)}" ${portadaEstilo(r, 1400)}>${r.foto ? '' : iconoDe(r)}</div>
       <h1>${esc(r.titulo)}</h1>
       ${r.subtitulo ? `<p class="sub">${esc(r.subtitulo)}</p>` : ''}
       <div class="pills">${(r.categorias || []).map(c => `<span class="pill oliva">${emojiCat(c)} ${esc(c)}</span>`).join('')}${r.tiempo ? `<span class="pill">⏱️ ${esc(r.tiempo)}</span>` : ''}</div>
@@ -459,6 +461,7 @@ function vAjustes(){
            <div class="campo"><input id="clave" type="password" placeholder="Clave de administrador" autocomplete="current-password"></div>
            <button class="btn" style="margin-top:12px" onclick="entrarAdmin()">Entrar</button>`}
     </div>
+    ${esAdmin() && S.recetas.some(r => !r.foto) ? `<button class="btn" style="margin-top:14px" onclick="importarFotosSites()">🖼️ Traer las fotos de la web antigua</button><p class="ayuda">Solo pone foto a las recetas que aún no tienen. ${S.recetas.filter(r => !r.foto).length} recetas sin foto.</p>` : ''}
     <button class="btn sec" style="margin-top:14px" onclick="refrescar(true)">🔄 Actualizar recetas</button>
     <p class="pie">ReCéTaMe · versión ${VERSION_APP} · ${S.recetas.length} recetas</p>`);
 }
@@ -471,6 +474,37 @@ async function entrarAdmin(){
   } catch(e) { aviso('Sin conexión', true); }
 }
 function salirAdmin(){ S.clave = ''; guardarLS('rm_clave', ''); cerrarHoja(); pintar(); aviso('Has salido del modo administrador'); }
+
+async function importarFotosSites(){
+  let mapa;
+  try { mapa = await (await fetch('datos/fotos-sites.json', { cache: 'no-store' })).json(); }
+  catch(e) { return aviso('No se pudo leer la lista de fotos', true); }
+  const porCat = {};
+  S.recetas.forEach(r => { const m = mapa[r.origen]; if (m && !r.foto) (porCat[m[0]] = porCat[m[0]] || []).push({ id: r.id, indice: m[1] }); });
+  const cats = Object.keys(porCat);
+  const total = cats.reduce((a, c) => a + porCat[c].length, 0);
+  if (!total) return aviso('No hay fotos pendientes de traer');
+  let hechas = 0, fallos = 0;
+  const pintarProg = () => abrirHoja(`<h2>Trayendo fotos…</h2><p class="ayuda">No cierres la app. Cada foto se guarda en tu carpeta de Drive «ReCéTaMe fotos».</p>
+    <div class="barra" style="background:var(--papel2);height:10px;border-radius:5px;margin-top:16px"><i style="width:${Math.round(hechas / total * 100)}%;background:var(--tomate)"></i></div>
+    <p style="text-align:center;margin-top:10px;font-weight:600">${hechas} de ${total}${fallos ? ` · ${fallos} con error` : ''}</p>`);
+  pintarProg();
+  for (const c of cats) {
+    const items = porCat[c];
+    for (let i = 0; i < items.length; i += 4) {
+      const lote = items.slice(i, i + 4);
+      try {
+        const d = await apiPost({ accion: 'fotosSites', clave: S.clave, categoria: c, items: lote });
+        if (!d.ok) throw new Error(d.error);
+        d.resultado.forEach(x => { if (x.ok && x.foto) { const r = receta(x.id); if (r) r.foto = x.foto; } if (!x.ok) fallos++; });
+      } catch(e) { fallos += lote.length; }
+      hechas += lote.length; pintarProg();
+    }
+  }
+  guardarLS('rm_cache', { recetas: S.recetas, version: S.version });
+  await refrescar(true);
+  abrirHoja(`<h2>${fallos ? 'Fotos traídas, con algún error' : '¡Fotos listas! 🖼️'}</h2><p class="ayuda">${total - fallos} de ${total} recetas tienen ya su foto.${fallos ? ' Vuelve a pulsar el botón para reintentar las que fallaron.' : ''}</p><button class="btn" style="margin-top:14px" onclick="cerrarHoja();pintar()">Ver recetas</button>`);
+}
 
 function confirmarBorrar(id){
   const r = receta(id);
