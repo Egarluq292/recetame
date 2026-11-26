@@ -1,5 +1,5 @@
 // Service worker de ReCéTaMe. Sube VERSION en cada actualización.
-const VERSION = 'recetame-v5';
+const VERSION = 'recetame-v6';
 const BASICOS = ['./', './index.html', './manifest.webmanifest', './img/chef-192.webp', './img/icono-maskable-512.png', './img/icono-180.png', './img/icono-192.png', './img/icono-512.png'];
 
 self.addEventListener('install', e => {

@@ -89,6 +89,12 @@ b,strong{font-weight:700}
 .pie-g .tt{font-family:Fraunces,serif;font-size:18px;font-weight:700;line-height:1.2}
 .pie-g .kc{font-size:13px;color:var(--suave);white-space:nowrap}
 
+
+/* Botón para volver arriba */
+.arriba{position:fixed;right:max(18px,calc(50% - 292px));bottom:calc(env(safe-area-inset-bottom) + 20px);width:52px;height:52px;border-radius:50%;background:var(--tinta);color:var(--papel);display:grid;place-items:center;box-shadow:0 8px 24px rgba(31,42,36,.28);z-index:21;opacity:0;transform:translateY(16px) scale(.9);pointer-events:none;transition:opacity .2s,transform .2s}
+.arriba.on{opacity:1;transform:none;pointer-events:auto}
+body.con-flotante .arriba{bottom:calc(env(safe-area-inset-bottom) + 92px);right:max(22px,calc(50% - 288px))}
+
 /* Colores por categoría */
 .c0{background-color:#E9EDD8}.c1{background-color:#F8E1D2}.c2{background-color:#F6DCD5}.c3{background-color:#DDEAF0}.c4{background-color:#F1E3CC}
 .c5{background-color:#F7EACB}.c6{background-color:#F6E6C4}.c7{background-color:#EEDDE6}.c8{background-color:#FBF0D6}.c9{background-color:#E4E8DC}
@@ -212,10 +218,11 @@ b,strong{font-weight:700}
 <div class="velo" id="velo" onclick="cerrarHoja()"></div>
 <div class="hoja" id="hoja"></div>
 <div class="aviso" id="aviso"></div>
+<button class="arriba" id="arriba" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Volver arriba"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
 
 <script>
 /* ============ CONFIGURACIÓN ============ */
-const VERSION_APP = '1.4';
+const VERSION_APP = '1.5';
 const API = 'https://script.google.com/macros/s/AKfycbxN4ZFdC8Ci31OKdtnWfAFjbkxe72K3fogh09CZBdf9HS-X0M6CBCTs2mFDecMBh7WO/exec';
 const CATEGORIAS = [
   ['Ensaladas y platos fríos', '🥗'], ['Airfryer - Horno', '🔥'], ['Carnes y salteados', '🍗'],
@@ -751,6 +758,13 @@ if ('serviceWorker' in navigator) {
   });
   if (sessionStorage.getItem('rm_actualizada')) { sessionStorage.removeItem('rm_actualizada'); setTimeout(() => aviso('App actualizada ✓'), 600); }
 }
+function revisarArriba(){
+  const en = window.scrollY > 700 && !document.querySelector('.cocina') && !$('#hoja').classList.contains('on');
+  $('#arriba').classList.toggle('on', en);
+  document.body.classList.toggle('con-flotante', !!document.querySelector('.flotante'));
+}
+window.addEventListener('scroll', revisarArriba, { passive: true });
+window.addEventListener('hashchange', () => setTimeout(revisarArriba, 50));
 leerCache();
 pintar();
 refrescar();
