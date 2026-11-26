@@ -47,7 +47,7 @@ b,strong{font-weight:700}
 .buscar{position:relative;margin-bottom:12px}
 .buscar input{width:100%;padding:14px 44px 14px 46px;border-radius:16px;border:1.5px solid var(--linea);background:var(--blanco);font-size:16px;outline:none}
 .buscar input:focus{border-color:var(--tinta2)}
-.buscar .lupa{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--suave);font-size:17px}
+.buscar .lupa{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--suave);display:flex}
 .buscar .borrar{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:var(--papel2);display:none;place-items:center;font-size:14px}
 .buscar.con .borrar{display:grid}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 18px 6px;margin:0 -18px 14px;scrollbar-width:none}
@@ -66,6 +66,28 @@ b,strong{font-weight:700}
 .tarjeta .meta{font-size:12.5px;color:var(--suave);margin-top:auto;display:flex;gap:10px}
 .vacio{text-align:center;color:var(--suave);padding:48px 12px}
 .vacio .e{font-size:44px;margin-bottom:8px}
+
+
+/* Pestañas de categorías con iconos */
+.fila-buscar{display:flex;gap:10px;margin-bottom:6px}
+.fila-buscar .buscar{flex:1;margin:0}
+.btn-filtros{position:relative;width:52px;flex-shrink:0;border-radius:16px;background:var(--blanco);border:1.5px solid var(--linea);display:grid;place-items:center;color:var(--tinta)}
+.btn-filtros.on{background:var(--tinta);border-color:var(--tinta);color:var(--papel)}
+.btn-filtros .nf{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:var(--tomate);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin:6px -18px 0;padding:0 12px;border-bottom:1px solid var(--linea);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 76px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0 9px;color:var(--suave);border-bottom:3px solid transparent;font-size:12.5px;font-weight:600}
+.tab small{font-size:11px;font-weight:500;opacity:.8}
+.tab.on{color:var(--tomate);border-bottom-color:var(--tomate)}
+.resumen{font-size:13px;color:var(--suave);margin:14px 0 12px;min-height:18px}
+.enlace{color:var(--tomate);font-weight:600;font-size:13px;padding:0 2px}
+.lista-g{display:grid;gap:16px}
+.tarjeta-g{background:var(--blanco);border-radius:22px;overflow:hidden;box-shadow:var(--sombra);text-align:left;width:100%;display:block}
+.foto-g{height:170px;display:grid;place-items:center;font-size:58px;position:relative;background-size:cover;background-position:center}
+.foto-g .fav{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,253,248,.92);display:grid;place-items:center;font-size:16px}
+.pie-g{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px 14px}
+.pie-g .tt{font-family:Fraunces,serif;font-size:18px;font-weight:700;line-height:1.2}
+.pie-g .kc{font-size:13px;color:var(--suave);white-space:nowrap}
 
 /* Colores por categoría */
 .c0{background-color:#E9EDD8}.c1{background-color:#F8E1D2}.c2{background-color:#F6DCD5}.c3{background-color:#DDEAF0}.c4{background-color:#F1E3CC}
@@ -193,7 +215,7 @@ b,strong{font-weight:700}
 
 <script>
 /* ============ CONFIGURACIÓN ============ */
-const VERSION_APP = '1.3';
+const VERSION_APP = '1.4';
 const API = 'https://script.google.com/macros/s/AKfycbxN4ZFdC8Ci31OKdtnWfAFjbkxe72K3fogh09CZBdf9HS-X0M6CBCTs2mFDecMBh7WO/exec';
 const CATEGORIAS = [
   ['Ensaladas y platos fríos', '🥗'], ['Airfryer - Horno', '🔥'], ['Carnes y salteados', '🍗'],
@@ -278,26 +300,76 @@ function pintar(){
 }
 
 /* ============ INICIO ============ */
+/* Iconos de trazo para las pestañas de categorías */
+const ICONOS = {
+  'todas': 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  'favs': 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z',
+  'Ensaladas y platos fríos': 'M5 19C5 9 11 5 19 5c0 8-4 14-14 14zM5 19l8-8',
+  'Airfryer - Horno': 'M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2-6 .8 1 1.6 2 1.8 3.2C11.3 7.5 12 5.5 12 3z',
+  'Carnes y salteados': 'M15 3a6 6 0 0 1 0 12l-5 5-3-3 5-5A6 6 0 0 1 15 3z',
+  'Pescado': 'M3 12c3.5-6 10.5-6 14 0-3.5 6-10.5 6-14 0zM17 12l4-3v6z',
+  'Guisos': 'M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM2 10h20M9 7c0-1.5 1.5-1.5 1.5-3M14 7c0-1.5 1.5-1.5 1.5-3',
+  'Cremas y sopas': 'M3 11h18a9 9 0 0 1-18 0zM9 8c0-1.5 1.5-1.5 1.5-3M13.5 8c0-1.5 1.5-1.5 1.5-3',
+  'Arroces': 'M2 12h18c0 3.3-4 6-9 6s-9-2.7-9-6zM20 12l3-2M7 9.5h.01M11 8.5h.01M15 9.5h.01',
+  'Bebidas y elixires': 'M6 3h12l-1.2 8a4.8 4.8 0 0 1-9.6 0zM12 16v5M8 21h8',
+  'Omelettes y huevos': 'M12 3c4 0 7 6 7 11a7 7 0 0 1-14 0c0-5 3-11 7-11z',
+  'Aperitivos': 'M5 19L19 5M14.1 6.1a3 3 0 1 1-4.2 4.2 3 3 0 0 1 4.2-4.2z'
+};
+const CORTO = { 'Ensaladas y platos fríos': 'Ensaladas', 'Airfryer - Horno': 'Airfryer', 'Carnes y salteados': 'Carnes', 'Cremas y sopas': 'Cremas', 'Bebidas y elixires': 'Bebidas', 'Omelettes y huevos': 'Huevos' };
+function svgIcono(d, t){ return `<svg width="${t || 26}" height="${t || 26}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"></path></svg>`; }
+
+/* Filtros: cómo se hace, calorías y proteína */
+const APARATOS = [
+  ['mc', 'Monsieur Cuisine', /monsieur|\bmc\b|\bvel\.? ?\d|velocidad|\bvaso\b|cubilete|mariposa/],
+  ['airfryer', 'Airfryer', /airfryer|freidora de aire/],
+  ['horno', 'Horno', /\bhorno\b/],
+  ['fuego', 'Sartén u olla', /sarten|\bolla\b|cazuela|cazo\b|plancha/]
+];
+const KCAL = [['ligera', 'Hasta 300 kcal', 0, 300], ['media', '300–500 kcal', 300, 500], ['contundente', 'Más de 500 kcal', 500, 1e9]];
+S.f = { aparatos: [], kcal: '', prot: false };
+const _ap = {};
+function aparatosDe(r){
+  if (_ap[r.id] && _ap[r.id].v === r.actualizada) return _ap[r.id].a;
+  const t = norm([r.titulo, r.subtitulo, (r.categorias || []).join(' '), (r.pasos || []).map(p => [p.titulo, p.programa, p.texto].join(' ')).join(' ')].join(' '));
+  const a = APARATOS.filter(x => x[2].test(t)).map(x => x[0]);
+  _ap[r.id] = { v: r.actualizada, a }; return a;
+}
+function nFiltros(){ return S.f.aparatos.length + (S.f.kcal ? 1 : 0) + (S.f.prot ? 1 : 0); }
+function pasaFiltros(r, f){
+  f = f || S.f;
+  if (f.aparatos.length) { const a = aparatosDe(r); if (!f.aparatos.every(x => a.includes(x))) return false; }
+  const k = r.macros && Number(r.macros.kcal);
+  if (f.kcal) { const g = KCAL.find(x => x[0] === f.kcal); if (!k || k < g[2] || k >= g[3]) return false; }
+  if (f.prot) { const p = r.macros && Number(r.macros.proteinas); if (!p || p < 30) return false; }
+  return true;
+}
+
+/* ============ INICIO ============ */
 function vInicio(){
   const app = $('#app');
   if (!S.cargado) { app.innerHTML = cabecera() + '<div class="cargando">Cargando recetas…</div>'; return; }
   const cuenta = {};
   S.recetas.forEach(r => (r.categorias || []).forEach(c => cuenta[c] = (cuenta[c] || 0) + 1));
-  const chips = [`<button class="chip ${S.cat === 'todas' ? 'on' : ''}" onclick="elegirCat('todas')">Todas<span class="n">${S.recetas.length}</span></button>`,
-    `<button class="chip ${S.cat === 'favs' ? 'on' : ''}" onclick="elegirCat('favs')">★ Favoritas<span class="n">${S.favs.filter(f => receta(f)).length}</span></button>`]
-    .concat(CATEGORIAS.filter(([c]) => cuenta[c]).map(([c, e]) => `<button class="chip ${S.cat === c ? 'on' : ''}" onclick="elegirCat('${esc(c)}')">${e} ${esc(c)}<span class="n">${cuenta[c]}</span></button>`));
+  const tab = (id, nombre, n) => `<button class="tab ${S.cat === id ? 'on' : ''}" onclick="elegirCat('${esc(id)}')" aria-pressed="${S.cat === id}">${svgIcono(ICONOS[id])}<span>${esc(nombre)}</span><small>${n}</small></button>`;
+  const tabs = [tab('todas', 'Todas', S.recetas.length), tab('favs', 'Favoritas', S.favs.filter(f => receta(f)).length)]
+    .concat(CATEGORIAS.filter(([c]) => cuenta[c]).map(([c]) => tab(c, CORTO[c] || c, cuenta[c])));
+  const nf = nFiltros();
   app.innerHTML = cabecera() + `
-    <div class="buscar ${S.q ? 'con' : ''}" id="buscar">
-      <span class="lupa">🔍</span>
-      <input id="q" type="search" placeholder="Buscar receta o ingrediente" value="${esc(S.q)}" oninput="buscar(this.value)" autocomplete="off">
-      <button class="borrar" onclick="buscar('');$('#q').value=''" aria-label="Borrar búsqueda">✕</button>
+    <div class="fila-buscar">
+      <div class="buscar ${S.q ? 'con' : ''}" id="buscar">
+        <span class="lupa">${svgIcono('M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4', 18)}</span>
+        <input id="q" type="search" placeholder="Receta o ingrediente" value="${esc(S.q)}" oninput="buscar(this.value)" autocomplete="off">
+        <button class="borrar" onclick="buscar('');$('#q').value=''" aria-label="Borrar búsqueda">✕</button>
+      </div>
+      <button class="btn-filtros ${nf ? 'on' : ''}" onclick="hojaFiltros()" aria-label="Filtros">${svgIcono('M4 6h16M7 12h10M10 18h4', 20)}${nf ? `<span class="nf">${nf}</span>` : ''}</button>
     </div>
-    <div class="chips" id="chips">${chips.join('')}</div>
+    <nav class="tabs" id="tabs" aria-label="Categorías">${tabs.join('')}</nav>
+    <div class="resumen" id="resumen"></div>
     <div id="lista"></div>
     <p class="pie">ReCéTaMe · versión ${VERSION_APP}</p>
     ${esAdmin() ? '<button class="flotante" onclick="ir(\'#/editar/nueva\')" aria-label="Nueva receta">＋</button>' : ''}`;
   pintarLista();
-  const on = document.querySelector('.chip.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+  const on = document.querySelector('.tab.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 function cabecera(){
   return `<div class="cab">
@@ -308,7 +380,7 @@ function cabecera(){
 }
 function elegirCat(c){ S.cat = c; vInicio(); }
 function buscar(v){ S.q = v; $('#buscar').classList.toggle('con', !!v); pintarLista(); }
-function filtradas(){
+function filtradas(f){
   const q = norm(S.q).trim();
   let l = S.recetas.slice();
   if (S.cat === 'favs') l = l.filter(r => S.favs.includes(String(r.id)));
@@ -320,24 +392,46 @@ function filtradas(){
       return ps.every(p => t.includes(p));
     });
   }
+  l = l.filter(r => pasaFiltros(r, f));
   return l.sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'));
 }
 function pintarLista(){
   const l = filtradas();
   const cont = $('#lista'); if (!cont) return;
+  const nombreCat = S.cat === 'todas' ? 'recetas' : S.cat === 'favs' ? 'favoritas' : (CORTO[S.cat] || S.cat).toLowerCase();
+  const res = $('#resumen');
+  if (res) res.innerHTML = l.length ? `${l.length} ${l.length === 1 && S.cat === 'todas' ? 'receta' : nombreCat}${nFiltros() ? ` · con filtros <button class="enlace" onclick="quitarFiltros()">Quitar</button>` : ' · de la A a la Z'}` : '';
   if (!l.length) {
     cont.innerHTML = S.recetas.length
-      ? `<div class="vacio"><div class="e">🍽️</div>${S.cat === 'favs' && !S.q ? 'Aún no tienes favoritas. Toca la ☆ de una receta.' : 'No hay recetas que coincidan.'}</div>`
+      ? `<div class="vacio"><div class="e">🍽️</div>${S.cat === 'favs' && !S.q && !nFiltros() ? 'Aún no tienes favoritas. Toca la ☆ de una receta.' : 'No hay recetas que coincidan.'}${nFiltros() ? '<br><button class="btn sec" style="margin-top:14px" onclick="quitarFiltros()">Quitar filtros</button>' : ''}</div>`
       : `<div class="vacio"><div class="e">📖</div>Todavía no hay recetas.</div>`;
     return;
   }
-  cont.innerHTML = '<div class="rejilla">' + l.map(r => `
-    <button class="tarjeta" onclick="ir('#/r/${esc(r.id)}')">
-      <div class="portada ${claseDe(r)}" ${portadaEstilo(r)}>${r.foto ? '' : iconoDe(r)}${S.favs.includes(String(r.id)) ? '<span class="fav">★</span>' : ''}</div>
-      <div class="cuerpo"><div class="tt">${esc(r.titulo)}</div>
-        <div class="meta">${r.macros && r.macros.kcal ? '<span>' + Math.round(r.macros.kcal) + ' kcal</span>' : ''}<span>👥 ${r.raciones || 1}</span></div></div>
+  cont.innerHTML = '<div class="lista-g">' + l.map(r => `
+    <button class="tarjeta-g" onclick="ir('#/r/${esc(r.id)}')">
+      <div class="foto-g ${claseDe(r)}" ${portadaEstilo(r, 900)}>${r.foto ? '' : iconoDe(r)}${S.favs.includes(String(r.id)) ? '<span class="fav">★</span>' : ''}</div>
+      <div class="pie-g"><span class="tt">${esc(r.titulo)}</span>${r.macros && r.macros.kcal ? `<span class="kc">${Math.round(r.macros.kcal)} kcal</span>` : ''}</div>
     </button>`).join('') + '</div>';
 }
+function quitarFiltros(){ S.f = { aparatos: [], kcal: '', prot: false }; cerrarHoja(); vInicio(); }
+
+/* Hoja de filtros: se trabaja sobre un borrador y se aplica con «Ver N recetas» */
+let FB = null;
+function hojaFiltros(){ FB = JSON.parse(JSON.stringify(S.f)); pintarHojaFiltros(); }
+function pintarHojaFiltros(){
+  const n = filtradas(FB).length;
+  const chip = (on, txt, fn) => `<button class="chip ${on ? 'on' : ''}" onclick="${fn}" aria-pressed="${on}">${txt}</button>`;
+  abrirHoja(`<div class="fila" style="display:flex;justify-content:space-between;align-items:baseline"><h2>Filtrar recetas</h2><button class="enlace" onclick="FB={aparatos:[],kcal:'',prot:false};pintarHojaFiltros()">Borrar filtros</button></div>
+    <div class="etq" style="margin-top:14px">Cómo se hace</div>
+    <div class="sel-cats" style="margin-top:8px">${APARATOS.map(([id, txt]) => chip(FB.aparatos.includes(id), txt, `alternarAparato('${id}')`)).join('')}</div>
+    <div class="etq" style="margin-top:18px">Calorías por ración</div>
+    <div class="sel-cats" style="margin-top:8px">${KCAL.map(([id, txt]) => chip(FB.kcal === id, txt, `FB.kcal=FB.kcal==='${id}'?'':'${id}';pintarHojaFiltros()`)).join('')}</div>
+    <div class="etq" style="margin-top:18px">Proteína</div>
+    <div class="sel-cats" style="margin-top:8px">${chip(FB.prot, 'Alta en proteína (30 g o más)', 'FB.prot=!FB.prot;pintarHojaFiltros()')}</div>
+    <p class="ayuda" style="margin-top:12px">Se combinan con la categoría elegida${S.cat === 'todas' ? '' : ` («${esc(CORTO[S.cat] || (S.cat === 'favs' ? 'Favoritas' : S.cat))}»)`} y con la búsqueda.</p>
+    <button class="btn tomate" style="margin-top:16px" ${n ? '' : 'disabled'} onclick="S.f=FB;cerrarHoja();vInicio()">${n ? `Ver ${n} ${n === 1 ? 'receta' : 'recetas'}` : 'Ninguna receta coincide'}</button>`);
+}
+function alternarAparato(id){ const i = FB.aparatos.indexOf(id); i < 0 ? FB.aparatos.push(id) : FB.aparatos.splice(i, 1); pintarHojaFiltros(); }
 
 /* ============ RECETA ============ */
 function racionesDe(r){ return S.rac[r.id] || Number(r.raciones) || 1; }
