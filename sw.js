@@ -1,6 +1,6 @@
 // Service worker de ReCéTaMe. Sube VERSION en cada actualización.
-const VERSION = 'recetame-v2';
-const BASICOS = ['./', './index.html', './manifest.webmanifest', './img/logo.svg', './img/icono-180.png', './img/icono-192.png', './img/icono-512.png'];
+const VERSION = 'recetame-v3';
+const BASICOS = ['./', './index.html', './manifest.webmanifest', './img/chef-192.webp', './img/icono-maskable-512.png', './img/icono-180.png', './img/icono-192.png', './img/icono-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(BASICOS.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
