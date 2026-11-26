@@ -46,6 +46,7 @@ function preparar() {
 function doGet(e) {
   const accion = (e && e.parameter && e.parameter.accion) || 'listar';
   try {
+    if (accion === 'listar' || accion === 'version') sincronizar_(false);
     if (accion === 'listar') {
       return json_({ ok: true, version: version_(), recetas: leerRecetas_() });
     }
@@ -178,6 +179,72 @@ function importar_(lista) {
     marcarVersion_();
   }
   return nuevas.length;
+}
+
+
+/* ============ Recetas nuevas desde GitHub ============ */
+/*
+ * Claude sube las recetas nuevas al archivo datos/nuevas.json del repositorio.
+ * Cada vez que la app consulta la hoja (como mucho una vez cada 2 minutos),
+ * el servidor mira ese archivo y añade o actualiza lo que haya cambiado.
+ * Cada receta lleva un «id» y una «revision»: cada revisión se aplica una sola vez,
+ * así que si luego la editas o la borras desde la app, no se vuelve a imponer.
+ */
+const URL_NUEVAS = 'https://raw.githubusercontent.com/Egarluq292/recetame/main/datos/nuevas.json';
+
+/** Ejecútala desde el editor para forzar la sincronización y ver el resultado. */
+function sincronizarAhora() {
+  Logger.log('Recetas añadidas o actualizadas: ' + sincronizar_(true));
+}
+
+function sincronizar_(forzar) {
+  const cache = CacheService.getScriptCache();
+  if (!forzar && cache.get('sync')) return 0;
+  cache.put('sync', '1', 120);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return 0;
+  try {
+    const r = UrlFetchApp.fetch(URL_NUEVAS + '?t=' + Date.now(), { muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return 0;
+    const lista = JSON.parse(r.getContentText());
+    if (!Array.isArray(lista)) return 0;
+    const props = PropertiesService.getScriptProperties();
+    const hechas = new Set(JSON.parse(props.getProperty('sync_hechas') || '[]'));
+    const h = hoja_();
+    const ahora = new Date().toISOString();
+    let n = 0;
+    lista.forEach(nueva => {
+      if (!nueva || !nueva.id || !nueva.titulo) return;
+      const marca = nueva.id + '@' + (nueva.revision || 1);
+      if (hechas.has(marca)) return;
+      const datos = Object.assign({}, nueva);
+      delete datos.revision;
+      const fila = buscarFila_(nueva.id);
+      if (fila) {
+        const anterior = filaAObjeto_(h.getRange(fila, 1, 1, CAMPOS.length).getValues()[0]);
+        const receta = Object.assign({}, anterior, datos, {
+          foto: datos.foto || anterior.foto,
+          creada: anterior.creada,
+          actualizada: ahora
+        });
+        h.getRange(fila, 1, 1, CAMPOS.length).setValues([objetoAFila_(receta)]);
+      } else {
+        const receta = Object.assign({ creada: ahora }, datos, { actualizada: ahora });
+        h.getRange(h.getLastRow() + 1, 1, 1, CAMPOS.length).setValues([objetoAFila_(receta)]);
+      }
+      hechas.add(marca);
+      n++;
+    });
+    if (n) {
+      props.setProperty('sync_hechas', JSON.stringify([...hechas]));
+      marcarVersion_();
+    }
+    return n;
+  } catch (err) {
+    return 0;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 
